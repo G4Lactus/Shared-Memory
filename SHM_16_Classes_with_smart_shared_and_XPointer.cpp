@@ -38,6 +38,10 @@ public:
   void add_number_to_Matrix(const double number) {
     *armaMat += number;
   }
+  
+  void add_numer_to_1stElement(const double number) {
+    armaMat->at(0, 0) += number;
+  }
 
   arma::mat return_Matrix() const{
     return *armaMat;
@@ -46,7 +50,7 @@ public:
   int return_use_count() const {
     return armaMat.use_count();
   }
-  
+
 private:
   // Attribute
   // --------------------
