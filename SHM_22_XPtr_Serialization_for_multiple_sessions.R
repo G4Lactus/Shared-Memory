@@ -2,14 +2,18 @@
 # current session.
 # Based on:
 # https://stackoverflow.com/questions/53132155/keep-xptr-for-multiple-sessions
-# we investigate now, how to prevail XPtr for multiple sesssions.
+# we investigate now, how to prevail XPtr for multiple sessions.
 # 
 # A C++ object managed by Rcpp::Xptr is destroyed when the R session ends. If
 # you want to save the object, you have to `serialize` it.
 # 
-# One approach is is offered by the Rcereal package.
+# One approach is is offered by the Rcereal package and the cereal C++ libarary.
+# Another approach is to use the more mature boost library.
+# 
 # The advantage of serialization and the reverse procedure, deserialization, is
-# a much cheaper processing than invoking a new construction based on attributes.
+# a much cheaper processing than invoking a new construction based on data.
+# Also, serialization results in file backing, and not storing data in stack
+# memory of your current R session.
 # -----------------------------------------------------------------------------
 
 # NOTE: install `Rcereal` and `boost` to get access to their C++ libraries
@@ -20,15 +24,17 @@ sourceCpp("SHM_22_XPtr_Serialization_for_multiple_sessions.cpp")
 
 ## ------------------------------------
 # create external pointer: the process takes 5 seconds, as heavy work is
-# ssimulated
+# simulated
 system.time(xptr <- create_XPtr_to_Primebase(42))
 
-# retrieve data from external pointer
-dereference_xptr(xptr)
+# retrieve data from external pointer, this is equivalent to invoking a class
+# member method which would return all class state variables to your current
+# R session.
+stored_value <- dereference_xptr(xptr)
 
 # Based on retrieved data the class instance can be reconstructed. But be aware,
 # the class construction may take again some time.
-create_XPtr_to_Primebase(dereference_xptr(xptr)) # takes ... time ...
+create_XPtr_to_Primebase(dereference_xptr(xptr)) # takes ... time ... again
 
 # a better approach is to serialize the object
 path_to_file <- paste0(getwd(), "/Backend/")
@@ -37,7 +43,7 @@ backing_file <- "Primebase.cereal"
 full_path <- paste0(path_to_file, backing_file)
 
 
-# now we serialize the obj
+# now we serialize the class obj
 serialize_Obj(xptr, full_path)
 rm(xptr)
 exists("xptr")

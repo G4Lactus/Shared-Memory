@@ -17,7 +17,7 @@ class Primebase
 	public:
 	  // no args ctor
 	  Primebase() : x{0} {};
-	  // ctor
+	  // one arg ctor
 	  Primebase(int x_) : x{x_} {
   		// simulate a long construction
   		std::this_thread::sleep_for(std::chrono::seconds(5));
@@ -28,6 +28,7 @@ class Primebase
 	  // class member methods
 	  int answer() { return x; }
 	  
+	  // this step is most important for serialization
 	  template <class Archive>
 	  void serialize(Archive& archive) {
   		archive(x);
