@@ -231,7 +231,7 @@ public:
 
     for (std::size_t j{0}; j < std::size_t(macc1.ncol()); ++j) {
       for (std::size_t i{0}; i < std::size_t(macc1.nrow()); ++i) {
-        macc1[j][i] = macc2[j][i];
+        macc1[j][i] -= macc2[j][i];
       }
     }
     
