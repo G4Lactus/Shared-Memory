@@ -10,7 +10,7 @@
 mat <- matrix(rnorm(12), 3, 4)
 print(mat)
 library(Rcpp)
-sourceCpp("SHM_11_Classes_with_Raw_Pointer.cpp")
+sourceCpp("SHM_12_Classes_with_Raw_Pointer.cpp")
 
 
 xptr_MatAdmin <- Test_Matrix_Administration(mat)
@@ -31,4 +31,5 @@ rm(xptr_MatAdmin)
 # are brutally harmed.
 mat_admin <- new(Matrix_Administration, mat)
 mat_admin$print_Matrix()
+mat_admin$add_42_to_Matrix()
 mat_admin$add_42_to_Matrix()

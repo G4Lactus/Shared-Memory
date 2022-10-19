@@ -16,7 +16,7 @@ arma::mat* return_ArmaMat_as_rawPtr(arma::mat& A) {
   
   for (std::size_t i{0}; i < ptr_arma->n_cols; ++i) {
     for (std::size_t j{0}; j < ptr_arma->n_rows; ++j) {
-      Rcpp::Rcout << (*ptr_arma)(j, i) << std::endl;
+      Rcpp::Rcout << ptr_arma->at(j, i) << std::endl;
     }
   }
   Rcpp::Rcout << "Inner part finished." << std::endl;

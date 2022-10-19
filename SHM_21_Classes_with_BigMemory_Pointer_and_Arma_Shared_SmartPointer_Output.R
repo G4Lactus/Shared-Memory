@@ -1,6 +1,6 @@
 # In the following we create a C++ class which uses a big memory external
-# pointer. Furthermore our class owns only a raw pointer to the data along with
-# a conversion construction towards an arma matrix.
+# pointer. Furthermore our class owns only a smart shared pointer to the data
+# along with a conversion construction towards an arma matrix.
 # ----------------------
 
 # generate some toy data
@@ -36,14 +36,14 @@ xptr::is_null_xptr(big_mat)
 # as SEXP to C++
 # ---------------
 library(Rcpp)
-sourceCpp("SHM_18_Classes_with_BigMemory_Pointer_and_ArmaPointer_Output.cpp")
+sourceCpp("SHM_21_Classes_with_BigMemory_Pointer_and_Arma_Shared_SmartPointer_Output.cpp")
 
 
 # NOTE: our class takes the big matrix as a SEXP, creates a XPtr, and creates
 #       an arma matrix as class member form it.
 #       The problem is that ginormous big matrices should  never be a stack obj.
 #       In the next demo we consider this case.
-# ------------------
+# ----------------------------------
 external_mat_admin <- new(External_bigMatrix_Administration, big_mat@address)
 external_mat_admin$print_Matrix()
 external_mat_admin$return_Matrix()

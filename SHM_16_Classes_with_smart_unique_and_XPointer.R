@@ -3,7 +3,7 @@
 # We start with std::unique_ptr inside the C++ class.
 # -----------------------------
 
-Rcpp::sourceCpp("SHM_15_Classes_with_smart_unique_and_XPointer.cpp")
+Rcpp::sourceCpp("SHM_16_Classes_with_smart_unique_and_XPointer.cpp")
 
 # create external pointer obj to our matrix
 xptr_mat <- create_XPtr_for_R_obj(matrix(rnorm(12), 3, 4))

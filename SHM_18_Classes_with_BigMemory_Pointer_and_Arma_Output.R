@@ -1,8 +1,7 @@
 # In the following we create a C++ class which uses a big memory external
-# pointer. Furthermore our class owns only a smart unique pointer to the data
-# along with a conversion construction towards an arma matrix.
+# pointer.
+# 
 # ----------------------
-
 # generate some toy data
 library(bigmemory)
 backing_path <- paste0(getwd(), "/Backend/")
@@ -31,13 +30,11 @@ xptr::is_null_xptr(big_mat)
 # either we create an external pointer here on the R side to the obj, or we
 # do it directly during class construction. We choose here the later approach.
 
-
 # due to the missing xptr property we have to hand over the big matrix pointer
 # as SEXP to C++
 # ---------------
 library(Rcpp)
-sourceCpp("SHM_19_Classes_with_BigMemory_Pointer_and_Arma_Unique_SmartPointer_Output.cpp")
-
+sourceCpp("SHM_18_Classes_with_BigMemory_Pointer_and_Arma_Output.cpp")
 
 # NOTE: our class takes the big matrix as a SEXP, creates a XPtr, and creates
 #       an arma matrix as class member form it.
@@ -49,16 +46,7 @@ external_mat_admin$print_Matrix()
 external_mat_admin$return_Matrix()
 external_mat_admin$add_Matrix_to_itself()
 external_mat_admin$print_Matrix()
-external_mat_admin$return_Matrix()
+
 class(external_mat_admin$return_Matrix()) # matrix, no big matrix
-
-# compare how the external matrix evolved
-big_mat[,]
-# As we have set a pointer to the big matrix, all changes made to the matrix
-# are made to the original data as well.
-# However, the big advantage over the stacked version is that the external
-# big matrix is on the hard drive rather the ram, and the class does not own
-# the data any more, but only a pointer to them.
-
 rm(external_mat_admin)
 

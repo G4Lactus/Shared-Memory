@@ -22,7 +22,7 @@
 # NOTE: install `Rcereal` and `boost` to get access to their C++ libraries
 # check: library(Rcereal), library(boost)
 library(Rcpp)
-sourceCpp("SHM_22_XPtr_Serialization_for_multiple_sessions.cpp")
+sourceCpp("SHM_23_XPtr_Serialization_for_multiple_sessions.cpp")
 
 
 ## ------------------------------------
@@ -64,7 +64,7 @@ dereference_xptr_double(xptr)
 ## Open another R session and continue with this part
 ## ------------------------------------------------------------
 library(Rcpp)
-sourceCpp("SHM_22_XPtr_Serialization_for_multiple_sessions.cpp")
+sourceCpp("SHM_23_XPtr_Serialization_for_multiple_sessions.cpp")
 xptr <- deserialize_Obj(paste0(getwd(), "/Backend/Primebase.cereal"))
 # we have access to the pointer from another session
 exists("xptr")

@@ -1,6 +1,6 @@
 # In this part we use shared pointers from the smart pointer family.
 # 
-Rcpp::sourceCpp("SHM_16_Classes_with_smart_shared_and_XPointer.cpp")
+Rcpp::sourceCpp("SHM_17_Classes_with_smart_shared_and_XPointer.cpp")
 
 # create external pointer obj to our matrix
 xptr_mat <- create_XPtr_for_R_obj(matrix(rnorm(12), 3, 4))

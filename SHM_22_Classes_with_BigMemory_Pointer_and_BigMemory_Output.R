@@ -57,7 +57,7 @@ print(big_mat_lst$big_mat1@address)
 
 
 library(Rcpp)
-sourceCpp("SHM_21_Classes_with_BigMemory_Pointer_and_BigMemory_Output.cpp")
+sourceCpp("SHM_22_Classes_with_BigMemory_Pointer_and_BigMemory_Output.cpp")
 # NOTE: our class takes the big matrix 1 as pointer and operates based on it.
 #       Armadillo matrices are not used now.
 #       Also note, you would never return ginormous big matrices back to the R
