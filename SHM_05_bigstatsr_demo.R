@@ -20,7 +20,7 @@ library(bigstatsr)
 path_to_file <- paste0(getwd(), "/Backend/")
 file_name <- "test_bigStatsR"
 complete_file_path <- paste0(path_to_file, file_name)
-bigX <- FBM(nrow = 10e2, ncol = 1e2, init = 0, backingfile = complete_file_path)
+bigX <- FBM(nrow = 10e2, ncol = 1e4, init = 0, backingfile = complete_file_path)
 print(bigX)
 class(bigX)
 object.size(bigX)

@@ -34,7 +34,7 @@ MatrixAccessor<double>* convert_bigMat_ptr_to_MatrixAccessor_ptr(SEXP ptr_bigMat
  */
 // [[Rcpp::export]]
 void create_extended_X(const SEXP& ptr_bigMat, const SEXP& ptr_exbigMat) {
-  
+
   // stack objs
   MatrixAccessor<double> macc1 = convert_bigMat_ptr_to_MatrixAccessor(ptr_bigMat);
   MatrixAccessor<double> macc2 = convert_bigMat_ptr_to_MatrixAccessor(ptr_exbigMat);
@@ -43,28 +43,28 @@ void create_extended_X(const SEXP& ptr_bigMat, const SEXP& ptr_exbigMat) {
               << " Please enter a second matrix whose dimensions are as follow:\n"
               << "nrow2 = nrow1, ncol2 = 2*ncol1" << std::endl;
   }
-  
+
   // heap objs
   MatrixAccessor<double>* macc3 = convert_bigMat_ptr_to_MatrixAccessor_ptr(ptr_bigMat);
-  
-  
+
+
   Rcpp::Rcout << "Ptr retrieved ncols: " << macc3->ncol() << std::endl;
   Rcpp::Rcout << "Ptr retrieved nrows: " << macc3->nrow() << std::endl;
-  
+
   // original data
   for (std::size_t j{0}; j < std::size_t(macc1.ncol()); ++j) {
     for (std::size_t i{0}; i < std::size_t(macc1.nrow()); ++i) {
       macc2[j][i] = macc1[j][i];
     }
   }
-  
+
   // add dummy variables
   for (std::size_t j{std::size_t(macc1.ncol())}; j < std::size_t(macc2.ncol()); ++j) {
     for (std::size_t i{0}; i < std::size_t(macc1.nrow()); ++i) {
       macc2[j][i] = R::norm_rand();
     }
   }
-  
+
   // overwrite original data
   for (std::size_t j{0}; j < std::size_t(macc3->ncol()); ++j) {
     for (std::size_t i{0}; i < std::size_t(macc3->nrow()); ++i) {
@@ -74,9 +74,9 @@ void create_extended_X(const SEXP& ptr_bigMat, const SEXP& ptr_exbigMat) {
       Rcpp::Rcout << "New value: " << (*macc3)[j][i] << std::endl;
     }
   }
-  
+
   delete macc3; // release raw pointer
-  
+
 }
 
 
@@ -132,7 +132,7 @@ bigM1 <- bigmemory::as.big.matrix(x = matrix(1:1200000, nrow = 3, ncol = 4e5), t
 ex_bigM1 <- bigmemory::big.matrix(nrow = nrow(bigM1), ncol = 2*ncol(bigM1),
                                   type = "double", init = 0)
 
-create_extended_X(bigM1@address, ex_bigM1@address)
+create_extended_X_stack_macc(bigM1@address, ex_bigM1@address)
 */
 
 
@@ -176,11 +176,20 @@ void create_extended_X_ptr_heap_macc(SEXP& ptr_bigMat, const SEXP& ptr_exbigMat)
 
 
 /*** R
-bigM2 <- bigmemory::as.big.matrix(x = matrix(1:1200000, nrow = 3, ncol = 4e5), type = "double")
-ex_bigM2 <- bigmemory::big.matrix(nrow = nrow(bigM2), ncol = 2*ncol(bigM2),
-                                  type = "double", init = 0)
+bigM2 <- bigmemory::as.big.matrix(x = matrix(1:12e8, nrow = 3e2, ncol = 4e6), type = "double", 
+                                  backingfile = "bigM_obj.bin", backingpath = paste0(getwd(), "/Backend/"), descriptorfile = "bigM_obj.desc")
 
-create_extended_X_ptr(bigM2@address, ex_bigM2@address)
+ex_bigM2 <- bigmemory::big.matrix(nrow = nrow(bigM2), ncol = 2*ncol(bigM2),
+                                  type = "double", init = 0,
+                                  backingfile = "bigME_obj.bin", backingpath = paste0(getwd(), "/Backend/"), descriptorfile = "bigME_obj.desc"
+                                 )
+rm(bigM2, ex_bigM2)
+gc()
+
+bigM2 <- bigmemory::attach.big.matrix(paste0(getwd(), "/Backend/", "bigM_obj.desc"))
+ex_bigM2 <- bigmemory::attach.big.matrix(paste0(getwd(), "/Backend/", "bigME_obj.desc"))
+
+create_extended_X_ptr_heap_macc(bigM2@address, ex_bigM2@address)
 */
 
 
