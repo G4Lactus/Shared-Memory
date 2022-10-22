@@ -1,12 +1,14 @@
+// [[Rcpp::depends(Rcereal)]]
 #include <iostream>
 #include <string>
 #include <chrono>
 #include <fstream>
 #include <thread>
-// [[Rcpp::depends(Rcereal)]]
-#include <Rcpp.h>
+// ----------------------
 #include <cereal/archives/binary.hpp>
-
+#include <cereal/access.hpp>
+// ----------------------
+#include <Rcpp.h>
 
 
 class Primebase
@@ -17,6 +19,14 @@ class Primebase
 	  
 	  void simulate_heavy_work() {
 	    std::this_thread::sleep_for(std::chrono::seconds(5));	    
+	  }
+	  
+	  friend class cereal::access;
+	  
+	  template <class Archive>
+	  void serialize(Archive& archive) {
+	    archive(x, d);
+	    return;
 	  }
 	  
 	public:
@@ -44,13 +54,7 @@ class Primebase
 	  // class member methods
 	  int get_x() const { return x; }
 	  double get_d() const { return d; }
-	  
-	  // this step is most important for serialization
-	  template <class Archive>
-	  void serialize(Archive& archive) {
-  		archive(x, d);
-  		return;
-	  }
+
 };
 
 
@@ -87,8 +91,9 @@ Rcpp::XPtr<Primebase> deserialize_Obj(std::string filename) {
   std::ifstream is(filename, std::ios::binary);
   cereal::BinaryInputArchive archive(is);
   
-  Primebase* instance = new Primebase; // obj pointer is created but 
-                                       // no construction takes place
+  // obj pointer is created based on no-args ctor
+  Primebase* instance = new Primebase;
+
   archive(*instance); // creation from archive
   
   return Rcpp::XPtr<Primebase>(instance);
