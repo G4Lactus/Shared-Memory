@@ -10,6 +10,9 @@ public:
   // ctor
   External_bigMatrix_Administration (SEXP ptr_big_mat) {
     Rcpp::XPtr<BigMatrix> xpMat(ptr_big_mat);
+    
+    // create heap object via shared pointer
+    // NOTE: heap objs are still RAM objs
     this->armaMat = std::make_shared<arma::mat>(arma::Mat<double>((double*)xpMat->matrix(), xpMat->nrow(), xpMat->ncol(), false, false));
   };
   

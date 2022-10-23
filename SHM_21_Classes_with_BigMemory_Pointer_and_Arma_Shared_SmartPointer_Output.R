@@ -22,24 +22,12 @@ is.filebacked(big_mat)
 big_mat[,]              # is a pointer
 class(big_mat)
 
-# big memory ptr are no xptrs
-xptr::is_xptr(big_mat)
 
-# even the address is no external pointer
-xptr::is_null_xptr(big_mat@address)
-xptr::is_null_xptr(big_mat)
-# either we create an external pointer here on the R side to the obj, or we
-# do it directly during class construction. We choose here the later approach.
-
-
-# due to the missing xptr property we have to hand over the big matrix pointer
-# as SEXP to C++
-# ---------------
 library(Rcpp)
 sourceCpp("SHM_21_Classes_with_BigMemory_Pointer_and_Arma_Shared_SmartPointer_Output.cpp")
 
 
-# NOTE: our class takes the big matrix as a SEXP, creates a XPtr, and creates
+# NOTE: our class takes the big matrix as a SEXP, creates an XPtr, and creates
 #       an arma matrix as class member form it.
 #       The problem is that ginormous big matrices should  never be a stack obj.
 #       In the next demo we consider this case.

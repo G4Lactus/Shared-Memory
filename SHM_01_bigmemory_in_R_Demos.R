@@ -114,7 +114,7 @@ big_mtx[,]
 # - a data frame will have character vectors converted to factors
 # - all factors converted to numeric factor levels
 # - all labels or character values will be lost
-# 
+# --------------------------------
 signature(big_mtx = "matrix")
 signature(big_mtx = "vector")
 signature(big_mtx = "data.frame")
@@ -131,6 +131,8 @@ x_Rmat <- as.matrix(big_mtx)
 class(big_mtx)
 class(x_Rmat)
 showClass("big.matrix")
+# bigmemory matrices are of class type big.matrix
+# their slot is address: this is an external pointer -> see package [xptr]
 
 
 # big.matrix: The core operations
@@ -195,8 +197,9 @@ GetMatrixSize(big_mtx)                  # bytes
 bigmemory::head(big_mtx)
 bigmemory::tail(big_mtx, n = 2)
 
+
 # sub-setting alternative that create a new big matrix obj, i.e., pointer to a
-# sub matrix
+# sub matrix obj
 # --------------
 sub.big.matrix(
   big_mtx,
@@ -232,7 +235,6 @@ big_sub_mtx[,]
 big_sub_mtx[1, 1]
 big_sub_mtx[1, , drop=TRUE]
 big_sub_mtx[,]
-
 # for more queries -> see demo 4 in this file
 
 
@@ -249,17 +251,20 @@ if (is.filebacked(big_mtx)) {
 
 # Demo 2: Scenario, two R-Sessions running
 # -----------------------------------------------------------------------------
+# To access a bigmatrix obj in another session, we need a "description" file.
 # We create another big.matrix obj big_mtx_z, and pass its "description" to
-# another R Session via SNOW, foreach, or even a simple file read/write.
-# Then "attach.big.matrix()" within the second R session grants access.
+# another R Session for working with it, e..g, for simple file read/write, or
+# some parallel processing with SNOW or foreach.
+# In combination with the "describe" and "attach.big.matrix()" the second R
+# session gets access.
 # -------------------------
 library(bigmemory)
 big_mtx_z <- big.matrix(nrow = 3, ncol = 3, type = 'double', init = 42)
 big_mtx_z[,]
-is.filebacked(big_mtx_z)
+is.filebacked(big_mtx_z) # still no file backing, heap obj
 
 # describe: The basic "big.matrix" operations for sharing and re-attaching
-# ----------------------------------------------------
+# ----------------------------------------------------------------------------
 # returns the information needed by attach.big.matrix to reference a shared or
 # file-backed big.matrix object.
 # The attach.big.matrix and attach.resource functions create a new big.matrix
@@ -268,15 +273,18 @@ is.filebacked(big_mtx_z)
 #------------------------------------------
 big_mtx_z_description <- describe(big_mtx_z)
 
-
+# the description file needs to be stored on disk
 path_to_backend <- paste0(getwd(), "/Backend/")
 if (!dir.exists(path_to_backend)) {
   dir.create(path_to_backend)
 }
 dput(big_mtx_z_description, file = paste0(path_to_backend, "big_mtx_z.desc"))
 
-# Our matrix lives now in shared heap memory as long as it is attached with
-# attach.big.matrix in at least one session (shared pointer mechanics).
+# NOTE: we are storing the description file on disk, but not the matrix itself.
+# Currently, our matrix lives in shared heap memory, and endures as long as
+# at least one R session holds a connection to it (shared pointer mechanics).
+# In other sessions it can be attached with "attach.big.matrix".
+
 
 
 ####
@@ -284,15 +292,15 @@ dput(big_mtx_z_description, file = paste0(path_to_backend, "big_mtx_z.desc"))
 # needs access to a network node's RAM, in the case of HPC computing.
 ##### -------------------------------------------------------------------------
 library(bigmemory)
-# my computer: "C:/Users/fabia/Documents/R/Shared Memory/Backend/big_mtx_z_description_signature.desc"
-path_to_desc_file <- "C:/Users/fabia/Documents/R/Shared Memory/Backend/big_mtx_z_description_signature.desc"
+
+path_to_desc_file <- paste0(getwd(), "/Backend/", "big_mtx_z.desc")
 big_mtx_y <- attach.big.matrix(obj = path_to_desc_file)
 big_mtx_y    # the pointer to the obj
 big_mtx_y[,] # the de-referenced pointer
 shared.name(big_mtx_y)
 
 
-# make a deep copy and create a new big.matrix obj
+# make a deep copy and create a new big.matrix obj in heap memory
 # ----------------------------------------------------
 # deepcopy(
 #   x,
@@ -309,8 +317,10 @@ shared.name(big_mtx_y)
 # )
 # ----------
 big_mtx_yy <- deepcopy(big_mtx_y,
+                       type = "double",
                        cols = -1  # exclude first column
                        )
+
 
 # compare the pointers and see that the obj are different
 big_mtx_y
@@ -320,10 +330,9 @@ big_mtx_yy
 # try a change
 # ---------------
 # be careful with data type castings, when you assign new values. If the mtx
-# obj is integer, a new value is type casted.
-big_mtx_y[1,1] <- -100.0 
+# obj is integer, and you assing a double the new value is casted.
+big_mtx_y[1,1] <- -100L # int to double
 big_mtx_y[,]
-
 q() # end session
 ##### -------------------------------------------------------------------------
 
@@ -343,18 +352,26 @@ q()          # NOTE: the ".desc" file remains on hard drive, except you place
 
 # Demo 3: File-backing
 # -----------------------------------------------------------------------------
-# Having big.matrix objs in shared memory is nice, but some data files exceed
-# the RAM. Here file backing comes to the rescue and even allow exceeding the
-# virtual memory in size.
+# Having big.matrix objs in shared heap memory is nice, but some data files
+# exceed the RAM. Here file backing comes to the rescue and even allow exceeding
+# the RAM memory, by mean of virtual memory.
+# Simply stated we take the hard drive as RAM.
 # -----------------------
 library(bigmemory)
 
-# create a directory for your file-backing
-temp_dir <- tempdir() # create a temporary directory for file-backing on system
+# Create a directory for your file-backing, because you have to keep track
+# where you file back your data. AVOID HARD DRIVE MEMORY LEAKS at all costs.
+# Temporary directories are suitable, as they are destroyed when the R session
+# is closed properly. If your R session crashes you loose all pointers, and
+# memory leaks are very likely. So be careful.
+temp_dir <- tempdir() 
 
 if (!dir.exists(path.expand(temp_dir))) { dir.create(path.expand(temp_dir)) }
 
 # create a file backed big.matrix obj
+# Two important files are written to disk:
+# - backingfile: .bin format
+# - descriptor: .desc format
 big_mtx_q <- big.matrix(
                 nrow = 3,
                 ncol = 3,
@@ -364,9 +381,9 @@ big_mtx_q <- big.matrix(
                                 c("col_nm1", "col_nm2", "col_nm3")
                             ),
                 separated = FALSE,
-                backingfile = "big_mtx_q_flushtest.bk",
+                backingfile = "big_mtx_q.bin",
                 backingpath = temp_dir,
-                descriptorfile = "big_mtx_q_flushtest.desc",
+                descriptorfile = "big_mtx_q.desc",
                 binarydescriptor = FALSE,
                )
 
@@ -392,10 +409,11 @@ library(bigmemory)
 big_mtx_x <- big.matrix(nrow = 10, 
                         ncol = 5,
                         init = 0, 
-                        type ="double",
+                        type ="double"
                        )
 big_mtx_x[,] = 1:50
 big_mtx_x[,]
+
 # NOTE: big matrices are column major oriented
 big_mtx_y <- sub.big.matrix(big_mtx_x, 
                             firstRow = 2, 
@@ -416,7 +434,7 @@ is.sub.big.matrix(big_mtx_x)  # FALSE
 is.sub.big.matrix(big_mtx_y)  # TRUE
 
 # note: the following drops an error -> use sub.big.matrix() 
-is.sub.big.matrix(big_mtx_x[1:2, ]) # ERROR: no big.matrix
+is.sub.big.matrix(big_mtx_x[1:2, ]) # ERROR: no big.matrix, its an R matrix
 is.sub.big.matrix(sub.big.matrix(big_mtx_x, firstRow = 1, lastRow = 2))
 
 # length of a big.matrix object
@@ -541,7 +559,6 @@ big_mtx_x[2, 2] <- NA
 big_mtx_x[,]
 
 temp_dir <- path.expand(tempdir()) 
-if (!dir.exists(temp_dir)) {dir.create(temp_dir)}
 
 # write.big.matrix
 # ------------------------------------------
@@ -611,3 +628,22 @@ identical(big_mtx_w, big_mtx_r)        # FALSE: ptr are of course not the same!
 identical(big_mtx_w[,], big_mtx_r[,])  # TRUE: data are of course the same!
 # -----------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
+
+
+# Demo 6: Finally we demonstrate the purpose of bigmemory objs with big volume
+#         data. The only limitation here is your hdd.
+# -----------------------------------------------------------------------------
+# The following example creates a 218 GB file on disk.
+library(bigmemory)
+the_BigMat <- bigmemory::filebacked.big.matrix(
+  nrow = 3.5e3,
+  ncol = 80e5,
+  type = "double",
+  init = 42, 
+  backingfile = "the_BigMat.bin",
+  backingpath = tempdir(),
+  descriptorfile = "the_BigMat.desc"
+)
+# -----------------------------------------------------------------------------
+
+
