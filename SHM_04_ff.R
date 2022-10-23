@@ -438,6 +438,7 @@ ff_obj1 <- ff(FALSE, dim=c(50, 100), filename = file.path(tempdir(), "ff_obj1.ff
 # create some toy data to create a data.frame
 ff_obj_i <- ff(1:1e6, filename = file.path(tempdir(), "ff_obji.ff"))
 ff_obj_q <- ff(sample(0:3, 1e6, TRUE), vmode = "quad", filename = file.path(tempdir(), "ff_objq.ff"))
+ff_obj_z <- ff(sample(0:3, 1e6, TRUE), vmode = "quad", filename = file.path(tempdir(), "ff_objq.ff"))
 
 # NOTE: you can only initialize the data once due to file backing. If you want
 # to construct an obj again, follow this chain
@@ -445,9 +446,10 @@ close(ff_obj_q)
 file.remove(filename(ff_obj_q))
 
 # create another data frame with ffdf() using the integer and quad ff vectors
-ff_df2 <- ffdf(ff_obj_i, ff_obj_q)
+ff_df2 <- ffdf(ff_obj_i, ff_obj_z)
 class(ff_df2)         # ffdf
-ff_df2[1:5, ]
+ff_df2
+ff_df2[1:5,]
 class(ff_df2[1:5, ])  # df
 vmode(ff_df2)
 str(ff_df2)
@@ -473,7 +475,7 @@ total
 quadtable
 
 
-# Example: create ff vectors with 80 Mio elements as input to df
+# Example: create ff vectors with 800 Mio elements as input to df
 # --------------------------------------------------------------------
 options(fffinalizer="close") # let snowfall not delete on remove
 N <- 8e7                     # sample size

@@ -1,13 +1,13 @@
 # Tutorial: bigstatsr
 # ---------------------
 # bigstatsR is an adaption of bigmemory and like it, it also provides a file
-# backing based data type. However, compared to bigmemry, we can work with the
+# backing based data type. However, compared to bigmemory, we can work with the
 # objects directly, rather than their pointers.
 # 
-# bigstatsr more modern compared to bigmemory, and backing files are easier to
-# delete. First delete the R obj andperform a gc(), then you can delete the
+# bigstatsr is more modern compared to bigmemory, and backing files are easier
+# to delete. First delete the R obj and perform a gc(), then you can delete the
 # backingfile.
-# Also bigstats allows offers a C++ backend for own code.
+# Also bigstats offers a C++ backend for own code.
 # 
 # The author's github:
 # https://privefl.github.io/R-presentation/bigstatsr.html#19
@@ -20,6 +20,7 @@ library(bigstatsr)
 path_to_file <- paste0(getwd(), "/Backend/")
 file_name <- "test_bigStatsR"
 complete_file_path <- paste0(path_to_file, file_name)
+
 bigX <- FBM(nrow = 10e2, ncol = 1e4, init = 0, backingfile = complete_file_path)
 print(bigX)
 class(bigX)
@@ -31,11 +32,10 @@ typeof(bigX)
 # bigstatsR offers apply functions, such as standard R's apply functions for
 # big matrices (also in parallel)
 # -------------------------------------
-big_apply(bigX, a.FUN = function(bigX, ind) {
+dummy <- big_apply(bigX, a.FUN = function(bigX, ind) {
   bigX[, ind] <- rnorm(nrow(bigX) * length(ind))
   return(NULL) # we don't want to return anything
 })
-bigX[,]
 
 # access some dummy data
 # -------------------------
@@ -44,24 +44,23 @@ bigX[15:30, 25:50]
 
 
 # Demo: big algorithms and performance
-# --------------------------------------
-
+# ---------------------------------------------------
 # 1. Correlation matrix
-# ---------------------
+# ---------------------------------------------------
 # first create R stack object than compute correlation matrix
-mat <- bigX[]
-system.time(corr1 <- cor(mat))
+system.time(corr1 <- cor(bigX[]))
 
 # apply big matrix function
 system.time(corr2 <- big_cor(bigX))
 
 all.equal(corr1, corr2[])
-# The results coincide. NOTE: for big matrices big_cor outperforms cor!
+# The results coincide. NOTE: for big matrices big_cor outperforms cor, and cor
+# is already at its limit. big_cor just starts.
 
 
 # 2. Singular value decomposition
-# ------------------------------
-system.time(svd1 <- svd(scale(mat), nu = 10, nv = 10))
+# ---------------------------------------------------
+system.time(svd1 <- svd(scale(bigX[]), nu = 10, nv = 10))
 
 # quadratic in the smallest dimension, linear in the other one
 system.time(svd2 <- big_SVD(bigX, fun.scaling = big_scale(), k = 10))
@@ -71,7 +70,7 @@ system.time(svd3 <- big_randomSVD(bigX, fun.scaling = big_scale(), k = 10))
 
 
 # 3. Multiple association
-# --------------------
+# ---------------------------------------------------
 M <- 100  # number of causal variables
 set <- sample(ncol(bigX), M)
 y <- scale(bigX[, set]) %*% rnorm(M)
@@ -81,13 +80,13 @@ plot(mult_test)
 
 
 library(ggplot2)
-plot(mult_test, type = "Manhatta") +
+plot(mult_test, type = "Manhattan") +
   aes(color = cols_along(bigX) %in% set) +
   labs(color = "Causal?")
 
 
 # 4. Prediction with big spLinReg
-# -----------------------------
+# ---------------------------------------------------
 # Split the indices in train/test sets
 ind_train <- sort(sample(nrow(bigX), size = 0.8*nrow(bigX)))
 ind_test <- setdiff(rows_along(bigX), ind_train)
@@ -108,7 +107,7 @@ qplot(pred, y[ind_test]) +
 
 
 # 5. Compute the sum for each column
-# ----------------------------------
+# ---------------------------------------------------
 # Brute force
 sums1 <- colSums(bigX[])
 
@@ -151,8 +150,8 @@ system.time(
     }, p.combine = "rbind", ind = ind_rep, 
     ncores = NCORES, y = y, covar = svd2$u)
 )
-
-# => ability to run algorithms on 100 GBs of data
+# => ability to run algorithms on 100s of GBs of data, due to filebacking.
+#    The only limitation is your hdd memory.
 
 
 # alternative parallel access
@@ -180,7 +179,7 @@ rds_path <- bigX$rds
 
 # OPEN ANOTHER R session
 ### ------------------------------------------
-path_to_rds <- "C:\\Users\\fabia\\Documents\\R\\Shared Memory\\Backend\\test_BigStatsR.rds"
+path_to_rds <- paste0(getwd(), "/Backend/", "test_BigStatsR.rds")
 # set active binding
 big_X <- bigstatsr::big_attach(path_to_rds)
 big_X[]
