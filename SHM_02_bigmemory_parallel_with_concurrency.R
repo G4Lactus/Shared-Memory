@@ -1,5 +1,5 @@
 # Demo: Parallel access to a matrix with independent and concurrent writing,
-#       data race and two ways to solve it!
+#       data race and approaches to solve it!
 # -----------------------------------------------------------------------------
 library(foreach)
 library(iterators)
@@ -27,7 +27,7 @@ foreach::getDoParWorkers()
 big_mtx <- as.big.matrix(
               x = matrix(0, 10, 10),
               type = "double",
-              backingfile = "big_mtx_description.bk",
+              backingfile = "big_mtx_description.bin",
               backingpath = temp_dir,
               descriptorfile = "big_mtx_description.desc",
               shared = TRUE
@@ -60,7 +60,7 @@ foreach(i = 1:10, .packages = "bigmemory", .combine = cbind) %dopar% {
 # -----------------------------------------------------------------------------
 m_tst <- attach.big.matrix(paste0(temp_dir, "\\big_mtx_description.desc"))
 m_tst[,]  # the results at m_tst[5,5] illustrates the data race outcome!
-          # expect are 50, but you obtain some weird other value
+          # expected are 50, but you obtain some weird other value
 rm(list = setdiff(ls(), "cl"))
 gc()
 # -----------------------------------------------------------------------------
@@ -73,7 +73,7 @@ gc()
 #             access. In my test trials I achieved success rates from 40-90%.
 #             Too volatile to rely on.
 #             Success depends on speed to access data. If we use no file backing
-#             such as .desc or .bk files, the success rate is higher. Otherwise
+#             such as .desc or .bin files, the success rate is higher. Otherwise
 #             it deteriorates.
 # -----------------------------------------------------------------------------
 # define big matrix and store it
@@ -95,10 +95,10 @@ for (scenarioX in 1:2) {
       )
       big_mtx_description <- describe(big_mtx)      
     } else {
-      if (!file.exists(paste0(path_to_file, "\\", back_file, ".bk"))) 
+      if (!file.exists(paste0(path_to_file, "\\", back_file, ".bin"))) 
       {
         big_mtx <- big.matrix(nrow = 10, ncol = 10, init = 0, 
-                              backingfile = paste0(back_file, ".bk"),
+                              backingfile = paste0(back_file, ".bin"),
                               backingpath = path_to_file,
                               descriptorfile = paste0(back_file, ".desc"))
         big_mtx_description <- describe(big_mtx)
@@ -239,7 +239,12 @@ m_tst[,]
 rm(list = setdiff(ls(), "cl"))
 
 
-# Simulation with mutex
+
+# Simulation with mutex: its possible that read access errors occur in this
+# simulation, as the mutex does not seems to work correctly inside the 
+# foreach environment.
+# We use the [flock] package here to establish a mutex, [synchronicity] is 
+# another example.
 # ---------------------------
 path_to_data <- tempdir()
 back_file <- "big_mtx4"
@@ -268,7 +273,7 @@ for (trial in 1:ntrials) {
 
 
   # ---------------------------------------------------------------------------
-  foreach(i = 1:10, .packages = c("bigmemory", "flock", "synchronicity")) %dopar% {
+  foreach(i = 1:10, .packages = c("bigmemory", "flock")) %dopar% {
 
 
     m <- attach.big.matrix(paste0(path_to_data, "\\", paste0(back_file, ".desc")))
@@ -282,11 +287,9 @@ for (trial in 1:ntrials) {
     
     # concurrent access and writing
     # -------------------------------------------------------------------------
-    # lock <- synchronicity::lock(paste0(path_to_data, "\\", paste0(back_file, ".desc")))
-    locked <- flock::lock()
+    locked <- flock::lock(paste0(path_to_data, "\\", paste0(back_file, ".desc")))
     m[5, 5] <- m[5, 5] + 5
     flock::unlock(locked)
-    # synchronicity::unlock(lock)
     
     return(0.)
   }
