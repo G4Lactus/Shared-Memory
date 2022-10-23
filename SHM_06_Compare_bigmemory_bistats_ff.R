@@ -13,7 +13,7 @@ mat <- matrix(rnorm(N*2), N, 2)
 temp_dir <- tempdir()
 file <- "bigM"
 big_mtx <- as.big.matrix(mat, type = "double", 
-                         backingfile = paste0(file, ".bk"), 
+                         backingfile = paste0(file, ".bin"), 
                          backingpath = temp_dir, 
                          descriptorfile = paste0(file, ".desc")
                         )
