@@ -1,7 +1,8 @@
+// [[Rcpp::depends(RcppArmadillo, BH, bigmemory)]]
 #include <iostream>
 #include <iomanip>
 #include <string>
-// [[Rcpp::depends(RcppArmadillo, BH, bigmemory)]]
+
 #include <RcppArmadillo.h>
 #include <bigmemory/BigMatrix.h>
 #include <bigmemory/MatrixAccessor.hpp>
@@ -238,15 +239,13 @@ public:
   }
   
   
-  // WORK IN PROGRESS
   void multiply_bigMatrix_with_bigMatrix(SEXP ptr_another_bigMat, SEXP ptr_res_bigMat) {
     
     MatrixAccessor<double> macc1 = convert_bigMptr_to_MatrixAccessor(p_bigM);
     MatrixAccessor<double> macc2 = convert_bigMptr_to_MatrixAccessor(ptr_another_bigMat);
     MatrixAccessor<double> macc3 = convert_bigMptr_to_MatrixAccessor(ptr_res_bigMat);
 
-    // Alternative: create in R bigMat objs and hand over the pointers
-    
+
     if (macc1.ncol() != macc2.nrow()) {
       std::cerr << "Sorry matrix dimensions don't match!" << std::endl;
       return;

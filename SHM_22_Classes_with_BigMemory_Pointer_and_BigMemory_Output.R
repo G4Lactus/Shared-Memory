@@ -5,12 +5,14 @@
 # However, this demands from us that we provide our own big matrix
 # linear algebra. But all RAM problems are gone.
 # ---------------------------------------------------------------
-
 library(bigmemory)
-
 set.seed(42)
 backing_path <- paste0(getwd(), "/Backend/")
-candidates <- c( "bigTestMat1", "bigTestMat2")
+if (!dir.exists(backing_path)) {
+  dir.create(backing_path)
+}
+candidates <- c("bigTestMat1", "bigTestMat2")
+
 
 big_mat_lst <- lapply(candidates, function(candidateX) {
   path_to_file <- paste0(backing_path, candidateX, ".bk")
@@ -25,7 +27,7 @@ big_mat_lst <- lapply(candidates, function(candidateX) {
                              type = "double",
                              backingfile = paste0(candidateX, ".bk"),
                              descriptorfile = paste0(candidateX, ".desc"),
-                             backingpath = backing_path
+                             backingpath = backing_path,
     )
   } else {
     big_mat <- attach.big.matrix(obj = paste0(backing_path, paste0(candidateX, ".desc")))
@@ -37,23 +39,27 @@ names(big_mat_lst) <- paste0("big_mat", 1:length(big_mat_lst))
 
 
 # Inspection
-big_mat_lst$big_mat1 # is a pointer
-big_mat_lst$big_mat1[,]
-class(big_mat_lst$big_mat1)
+big_mat_lst$big_mat1         # is a pointer
+big_mat_lst$big_mat1[,]      # print raw data to console, avoid for giant data
+class(big_mat_lst$big_mat1)         # big.matrix, bigmemory
+class(big_mat_lst$big_mat1@address) # the ptr itself is an externalptr obj
 
-big_mat_lst$big_mat2 # is a pointer
-big_mat_lst$big_mat2[,]
+big_mat_lst$big_mat2         # is a pointer
+big_mat_lst$big_mat2[,]      # print raw data to consolo, avoid for giant data
 class(big_mat_lst$big_mat2)
 
 
-# big memory ptr are no xptrs
+library(xptr)
+# big memory objs are no xptrs
 xptr::is_xptr(big_mat_lst$big_mat1)
-# even the address is no external pointer
-xptr::is_null_xptr(big_mat_lst$big_mat1@address)
-xptr::is_null_xptr(big_mat_lst$big_mat1) # error - no xptr
+# however, their address are externalptr which are xptr
+xptr::is_xptr(big_mat_lst$big_mat1@address)
+# check if pointed to address is invalid
+xptr::is_null_xptr(big_mat_lst$big_mat1@address) # FALSE -> valid
+# print the pointer address
 print(big_mat_lst$big_mat1@address)
-# due to the missing xptr property we have to hand over the big matrix pointer
-# as SEXP to C++
+xptr::xptr_address(big_mat_lst$big_mat1@address)
+
 
 
 library(Rcpp)
@@ -109,6 +115,4 @@ big_mat_lst$big_mat_res[,] <- 0
 big_mat_lst$big_mat1[,] %*% big_mat_lst$big_mat2[,]
 external_mat_admin$multiply_bigMatrix_with_bigMatrix(big_mat_lst$big_mat2@address, big_mat_lst$big_mat_res@address)
 big_mat_lst$big_mat_res[,]
-
-rm(external_mat_admin)
 
