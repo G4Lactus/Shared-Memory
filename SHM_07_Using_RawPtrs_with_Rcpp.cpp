@@ -10,7 +10,7 @@
 arma::mat* return_ArmaMat_as_rawPtr_sameObj(arma::mat& A) {
   
   A.print();
-  // create a new raw pointer and transfer data to the heap
+  // create a raw pointer and and let it point to A's reference pointer
   arma::mat* ptr_arma = &A;
   *ptr_arma += 42;
   ptr_arma->print();
@@ -21,7 +21,7 @@ arma::mat* return_ArmaMat_as_rawPtr_sameObj(arma::mat& A) {
 arma::mat* return_ArmaMat_as_rawPtr_newObj(arma::mat& A) {
   
   A.print();
-  // create a new raw pointer and transfer data to the heap
+  // create a new raw pointer
   arma::mat* ptr_arma = new arma::mat((double*) A.memptr(), A.n_rows, A.n_cols);
   *ptr_arma += 42;
   ptr_arma->print();
