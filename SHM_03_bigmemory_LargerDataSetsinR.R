@@ -25,11 +25,11 @@
 
 # create toy data
 test_data <- matrix(rnorm(1e5), nrow = 100)
-data_dir <- paste(getwd(), "Backend/", sep = "/")
+data_dir <- paste0(getwd(), "/Backend/")
 if (!dir.exists(data_dir)) { dir.create(path = data_dir) }
 path_to_open_file <- paste0(data_dir, "test.csv")
 write.csv(test_data, file = path_to_open_file, row.names = FALSE)
-rm(list = setdiff(ls(), "path_to_open_file"))
+rm(list = setdiff(ls(), c("data_dir", "path_to_open_file")))
 gc()
 
 
@@ -49,17 +49,14 @@ gc()
 # -----------------------------------
 bigfile <- read.csv(file = path_to_open_file, stringsAsFactors = FALSE,
                     header = TRUE, nrows = 20)
-nrow(bigfile)
-ncol(bigfile)
 
-# fread
-# -------
+# fread is superior in reading data into R
 system.time(read.csv(file = path_to_open_file, 
                      stringsAsFactors = FALSE, 
                      header = TRUE)
             )
 system.time(data.table::fread(input = path_to_open_file))
-# fread has a superior backend implementation in C++
+
 
 
 # The [bigmemory] package
@@ -78,10 +75,12 @@ system.time(data.table::fread(input = path_to_open_file))
 # 
 # ----------------------------
 library(bigmemory)
-big_mtx <- read.big.matrix(filename = path_to_open_file, type = "double",
-                           header = TRUE, backingfile = "tst_data.bin",
-                           descriptorfile = "tst_data.desc",
-                           extraCols = NULL)
+big_mtx <- read.big.matrix(filename = path_to_open_file, 
+                           type = "double",
+                           header = TRUE, 
+                           backingpath = data_dir,
+                           extraCols = NULL
+                           )
 
 # process big matrix in active session
 colsum_session <- sum(as.numeric(big_mtx[, 3]))
@@ -89,10 +88,6 @@ colsums_session <- colSums(big_mtx[, 3:10])
 
 # Get the location of the pointer 
 desc_to_ptr <- describe(big_mtx)
-
-# WORKS FINE, but there is one limitation:
-# C++ matrices allow only one type of data, therefore the data set has to be
-# only one class of data.
 
 
 
