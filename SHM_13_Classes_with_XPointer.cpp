@@ -44,8 +44,10 @@ private:
 };
 
 
-Rcpp::XPtr<arma::mat> create_XPtr_for_R_obj(arma::mat& A) {
-  arma::mat* armaMat = new arma::mat(A.memptr(), A.n_rows, A.n_cols, false, false);
+Rcpp::XPtr<arma::mat> create_XPtr_for_R_obj(arma::mat A) {
+  // add this point we use an aux_mem copy, to store the data inside the xptr
+  // as heap obj. As our data only exist on the pointed to memory address.
+  arma::mat* armaMat = new arma::mat(A.memptr(), A.n_rows, A.n_cols, true, false);
   return Rcpp::XPtr<arma::mat> (armaMat);
 }
 
