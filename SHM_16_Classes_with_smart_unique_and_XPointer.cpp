@@ -14,7 +14,7 @@ public:
     Rcpp::Rcout << "XPtr from R: " << xptr_A << "\n";
     Rcpp::Rcout << *xptr_A << "\n";
     this->armaMat = std::unique_ptr<arma::mat>(xptr_A);
-    Rcpp::Rcout << "Smart pointer in C++ taking the adress: " << armaMat.get() << "\n";
+    Rcpp::Rcout << "Smart pointer in C++ taking the address: " << armaMat.get() << "\n";
     Rcpp::Rcout << *armaMat << "\n";
   };
   
@@ -50,7 +50,7 @@ private:
 
 
 Rcpp::XPtr<arma::mat> create_XPtr_for_R_obj(arma::mat& A) {
-  arma::mat* armaMat = new arma::mat(A.memptr(), A.n_rows, A.n_cols, false, false);
+  arma::mat* armaMat = new arma::mat(A.memptr(), A.n_rows, A.n_cols, true, false);
   return Rcpp::XPtr<arma::mat> (armaMat);
 }
 

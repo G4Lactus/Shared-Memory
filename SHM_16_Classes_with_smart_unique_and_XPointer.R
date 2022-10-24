@@ -30,6 +30,7 @@ external_mat_admin$return_Matrix()
 
 # object no longer needed: delete it, release pointers and memory
 rm(external_mat_admin)
+gc()
 
 # check out the obj
 xptr::xptr_address(xptr_mat)
