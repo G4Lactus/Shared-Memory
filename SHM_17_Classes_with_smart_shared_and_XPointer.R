@@ -1,5 +1,6 @@
 # In this part we use shared pointers from the smart pointer family.
 # 
+# -------------------
 Rcpp::sourceCpp("SHM_17_Classes_with_smart_shared_and_XPointer.cpp")
 
 # create external pointer obj to our matrix
@@ -27,11 +28,10 @@ external_mat_admin$return_use_count()
 
 # object no longer needed: delete it, release pointers and memory
 rm(external_mat_admin)
+gc()
 
 # check out the obj
 xptr::xptr_address(xptr_mat)
-print(xptr_mat)
-
 # release memory
 xptr::xptr_clear(xptr_mat)
 xptr::xptr_address(xptr_mat)
