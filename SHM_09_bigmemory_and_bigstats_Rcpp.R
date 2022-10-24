@@ -15,7 +15,7 @@ set.seed(42)
 data <- matrix(rnorm(25), 5, 5)
 temp_dir <- tempdir()
 file <- "bigX"
-bigX <- bigmemory::as.big.matrix(data, type = "double", backingfile = paste0(file, ".bk"), 
+bigX <- bigmemory::as.big.matrix(data, type = "double", backingfile = paste0(file, ".bin"), 
                                  descriptorfile = paste0(file, ".desc"), backingpath = temp_dir)
 fbmX <- bigstatsr::as_FBM(data, type = "double", backingfile = paste0(temp_dir, "\\", file, "_fbm.bk"))
 
@@ -41,7 +41,7 @@ colSums(bigX[,])
 # [bigstatsr] obj based
 colSum_fbm(fbmX)
 colSums(fbmX[])
-colSum_subfbm(fbmX, rows_along(fbmX), 1:5)
-colSum_subfbm(fbmX, rows_along(fbmX), 1:3)
+colSum_subfbm(fbmX, bigstatsr::rows_along(fbmX), 1:5)
+colSum_subfbm(fbmX, bigstatsr::rows_along(fbmX), 1:3)
 
 # And of course the results coincide with base R.
