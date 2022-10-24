@@ -4,7 +4,6 @@
 # interested in creating. First, the External Pointer for the big.matrix, i.e.,
 # XPtr<BigMatrix>, which also stores all of the attributes of the big.matrix,
 # including nrow(), ncol(), and matrix_type().
-# 
 #
 # The second is the MatrixAccessor which allows you to access elements within
 # the big.matrix. When creating the MatrixAccessor you must declare the type
@@ -23,6 +22,7 @@ library(microbenchmark)
 library(Rcpp)
 sourceCpp("SHM_10_Using_Bigmemory_with_Rcpp.cpp")
 
+
 # Generate some data
 # --------------------------------------------------------------
 nrows <- 1e4
@@ -31,8 +31,8 @@ if (!dir.exists(path_to_backend)) { dir.create(path_to_backend) }
 file <- "big_Mat"
 full_path <- paste0(path_to_backend, file, ".desc")
 if (!file.exists(full_path)) {
-  big_Mat <- filebacked.big.matrix(nrow = 1e4, ncol = 3, type = "double",
-                                   backingfile = paste0(file, ".bk"), 
+  big_Mat <- filebacked.big.matrix(nrow = nrows, ncol = 42, type = "double",
+                                   backingfile = file, 
                                    backingpath = path_to_backend,
                                    descriptorfile = paste0(file, ".desc"),
                                    dimnames = c(NULL, NULL))  
@@ -51,7 +51,8 @@ big_Mat[,]
 
 # Example 1: templated big column sum for column X
 # -----------------------------------------------------------------------------
-big_colSums(big_Mat@address, 42)
+ncol(big_Mat)
+big_colSums(big_Mat@address, 3)
 sum(big_Mat[,3])
 all.equal(sum(big_Mat[,3]), big_colSums(big_Mat@address, 3))
 all.equal(colSums(big_Mat[,]), sapply(1:3, function(x) { return(big_colSums(big_Mat@address, x)) }))
@@ -67,7 +68,7 @@ microbenchmark(
   times = 1e4
 )
 # Of course the example is not meaningful, but it illustrates how to work with
-# templates in Rcpp.
+# templates and bigmemory in Rcpp.
 
 
 
@@ -176,7 +177,7 @@ bigm[,]
 
 
 
-# Example 11: 
+# Example 11: Extract diagonal from a big matrix
 # -----------------------------------------------------------------------------
 set.seed(42)
 bigm <- as.big.matrix(matrix(seq(25), 5, 5), type = "integer")

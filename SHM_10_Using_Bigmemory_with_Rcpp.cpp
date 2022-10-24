@@ -154,16 +154,19 @@ void armacast(SEXP ptr_Data, bool stack_obj) {
   if (xptr_Data->matrix_type() == 8) {
     if (stack_obj) {
       // constructor new stack obj for bigmatrix input
-      arma::mat M((double*)xptr_Data->matrix(), xptr_Data->nrow(), xptr_Data->ncol(), false);
-      M.print("Arma matrix M");      
+      arma::mat M((double*)xptr_Data->matrix(), xptr_Data->nrow(), xptr_Data->ncol(),
+                  false, false);
+      M.print("Arma matrix M");
     } else {
-      arma::mat* M = new arma::mat((double*)xptr_Data->matrix(), xptr_Data->nrow(), xptr_Data->ncol(), false);
+      // constructor new heap obj for bigmatrix input
+      arma::mat* M = new arma::mat((double*)xptr_Data->matrix(), xptr_Data->nrow(),
+                                   xptr_Data->ncol(), false, false);
       M->print();
       delete M; // avoid memory leak
     }
 
   } else {
-    std::cout << "Not implemented yet!" << std::endl;
+    throw Rcpp::exception("Unknown type of big.matrix detected! Aborting.");
   }
 }
 // ---------------------------------------------------------------------------
