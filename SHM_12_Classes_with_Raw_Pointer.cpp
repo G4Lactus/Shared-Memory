@@ -9,8 +9,8 @@ class Matrix_Administration {
     
     // ctor
     // --------------------
-    Matrix_Administration (arma::mat&& A) {
-      this->armaMat = new arma::mat(A.memptr(), A.n_rows, A.n_cols, false, false);
+    Matrix_Administration (arma::mat&& A, bool aux_mem) {
+      this->armaMat = new arma::mat((double*)A.memptr(), A.n_rows, A.n_cols, aux_mem, false);
     };
     
     
@@ -25,6 +25,10 @@ class Matrix_Administration {
     void print_Matrix() const{
       armaMat->print();
       Rcpp::Rcout << std::endl;
+    }
+    
+    void retrieve_ptr_address() const {
+      Rcpp::Rcout << armaMat->memptr() << std::endl;
     }
     
     arma::mat* add_42_to_Matrix() {
@@ -56,17 +60,18 @@ class Matrix_Administration {
       return Rcpp::XPtr<arma::mat>(armaMat);
     }
     
+  private:
     // Attribute
     // --------------------
-    arma::mat* armaMat;
+    arma::mat* armaMat{nullptr};
 
 };
 
 
 // [[Rcpp::export]]
-Rcpp::XPtr<Matrix_Administration> Test_Matrix_Administration(arma::mat& A) {
+Rcpp::XPtr<Matrix_Administration> Test_Matrix_Administration(arma::mat A, bool aux_mem) {
 
-  Matrix_Administration* MA = new Matrix_Administration(std::move(A));
+  Matrix_Administration* MA = new Matrix_Administration(std::move(A), aux_mem);
   MA->print_Matrix();
   MA->add_42_to_Matrix();
   MA->print_Matrix();
@@ -78,7 +83,7 @@ Rcpp::XPtr<Matrix_Administration> Test_Matrix_Administration(arma::mat& A) {
   MA->print_Matrix();
   MA->add_Matrix_to_itself();
   MA->print_Matrix();
-  Rcpp::Rcout << "Pointer address of ptr armaMat: " << MA->armaMat << std::endl;
+  MA->retrieve_ptr_address();
 
   return Rcpp::XPtr<Matrix_Administration> (MA);
 }
@@ -96,9 +101,10 @@ void reload_pointer_data_for_Matrix_Administration(Rcpp::XPtr<Matrix_Administrat
 RCPP_MODULE(mod_Matrix_Admin) {
 
   Rcpp::class_<Matrix_Administration>("Matrix_Administration")
-    .constructor<arma::mat>("Creates new class obj.")
+    .constructor<arma::mat, bool>("Creates new class obj.")
     .method("print_Matrix", &Matrix_Administration::print_Matrix, "Prints matrix.")
     .method("add_42_to_Matrix", &Matrix_Administration::add_42_to_Matrix, "Add 42 to matrix.")
+    .method("retrieve_ptr_address", &Matrix_Administration::retrieve_ptr_address, "Retrieve address of raw ptr.")
   ;
 
 }
