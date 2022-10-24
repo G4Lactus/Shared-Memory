@@ -25,13 +25,6 @@ class(big_mat)
 
 library(Rcpp)
 sourceCpp("SHM_21_Classes_with_BigMemory_Pointer_and_Arma_Shared_SmartPointer_Output.cpp")
-
-
-# NOTE: our class takes the big matrix as a SEXP, creates an XPtr, and creates
-#       an arma matrix as class member form it.
-#       The problem is that ginormous big matrices should  never be a stack obj.
-#       In the next demo we consider this case.
-# ----------------------------------
 external_mat_admin <- new(External_bigMatrix_Administration, big_mat@address)
 external_mat_admin$print_Matrix()
 external_mat_admin$return_Matrix()
