@@ -11,7 +11,9 @@ public:
   // --------------------
   External_Matrix_Administration (Rcpp::XPtr<arma::mat>&& xptr_A) {
     Rcpp::Rcout << xptr_A << std::endl;
-    // In this case the class uses the same pointer!
+    // In this case the class uses the same pointer! Be aware, that using the
+    // move just counts for the C++ backend. In R the object is still
+    // present under its original name.
     this->armaMat = std::move(xptr_A);
   };
   
@@ -54,7 +56,7 @@ private:
 
 
 Rcpp::XPtr<arma::mat> create_XPtr_for_R_obj(arma::mat& A) {
-  arma::mat* armaMat = new arma::mat(A.memptr(), A.n_rows, A.n_cols, false, false);
+  arma::mat* armaMat = new arma::mat(A.memptr(), A.n_rows, A.n_cols, true, false);
   return Rcpp::XPtr<arma::mat> (armaMat);
 }
 
