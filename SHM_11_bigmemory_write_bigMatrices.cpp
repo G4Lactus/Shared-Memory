@@ -128,7 +128,7 @@ void create_extended_X_stack_macc(const SEXP& ptr_bigMat, const SEXP& ptr_exbigM
 
 /*** R
 library(bigmemory)
-bigM1 <- bigmemory::as.big.matrix(x = matrix(1:1200000, nrow = 3, ncol = 4e5), type = "double")
+bigM1 <- bigmemory::as.big.matrix(x = matrix(1:12e5, nrow = 3, ncol = 4e5), type = "double")
 ex_bigM1 <- bigmemory::big.matrix(nrow = nrow(bigM1), ncol = 2*ncol(bigM1),
                                   type = "double", init = 0)
 
@@ -156,8 +156,10 @@ void create_extended_X_ptr_heap_macc(SEXP& ptr_bigMat, const SEXP& ptr_exbigMat)
   Rcpp::Rcout << sizeof(macc2) << std::endl;  
   
   // original data
+  std::size_t counter{0};
   for (std::size_t j{0}; j < std::size_t(macc1->ncol()); ++j) {
     for (std::size_t i{0}; i < std::size_t(macc1->nrow()); ++i) {
+      (*macc1)[j][i] = counter++;
       (*macc2)[j][i] = (*macc1)[j][i];
     }
   }
@@ -176,12 +178,19 @@ void create_extended_X_ptr_heap_macc(SEXP& ptr_bigMat, const SEXP& ptr_exbigMat)
 
 
 /*** R
-bigM2 <- bigmemory::as.big.matrix(x = matrix(1:12e8, nrow = 3e2, ncol = 4e6), type = "double", 
-                                  backingfile = "bigM_obj.bin", backingpath = paste0(getwd(), "/Backend/"), descriptorfile = "bigM_obj.desc")
+bigM2 <- bigmemory::filebacked.big.matrix(nrow = 2e3, ncol = 4e6, type = "double", 
+                                          init = NULL, 
+                                          backingfile = "bigM_obj.bin", 
+                                          backingpath = paste0(getwd(), "/Backend/"),
+                                          descriptorfile = "bigM_obj.desc"
+                                         )
 
-ex_bigM2 <- bigmemory::big.matrix(nrow = nrow(bigM2), ncol = 2*ncol(bigM2),
-                                  type = "double", init = 0,
-                                  backingfile = "bigME_obj.bin", backingpath = paste0(getwd(), "/Backend/"), descriptorfile = "bigME_obj.desc"
+ex_bigM2 <- bigmemory::filebacked.big.matrix(nrow = nrow(bigM2), 
+                                  ncol = 2*ncol(bigM2),
+                                  type = "double", 
+                                  init = NULL,
+                                  backingfile = "bigME_obj.bin", backingpath = paste0(getwd(), "/Backend/"),
+                                  descriptorfile = "bigME_obj.desc"
                                  )
 rm(bigM2, ex_bigM2)
 gc()
@@ -190,6 +199,8 @@ bigM2 <- bigmemory::attach.big.matrix(paste0(getwd(), "/Backend/", "bigM_obj.des
 ex_bigM2 <- bigmemory::attach.big.matrix(paste0(getwd(), "/Backend/", "bigME_obj.desc"))
 
 create_extended_X_ptr_heap_macc(bigM2@address, ex_bigM2@address)
+bigM2[1:10, 3999998:4000000]
+ex_bigM2[1:10, 3999998:4000002]
 */
 
 
