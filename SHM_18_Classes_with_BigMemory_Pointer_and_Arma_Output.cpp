@@ -11,6 +11,7 @@ public:
   External_bigMatrix_Administration (SEXP ptr_big_mat) {
     Rcpp::XPtr<BigMatrix> xpMat(ptr_big_mat);
     this->armaMat = arma::Mat<double>( (double*)xpMat->matrix(), xpMat->nrow(), xpMat->ncol(), false, false);
+    // especially for filebacked data we can choose the aux_mem option as false
   };
   
   // dtor
