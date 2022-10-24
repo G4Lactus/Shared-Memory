@@ -17,7 +17,7 @@ temp_dir <- tempdir()
 file <- "bigX"
 bigX <- bigmemory::as.big.matrix(data, type = "double", backingfile = paste0(file, ".bin"), 
                                  descriptorfile = paste0(file, ".desc"), backingpath = temp_dir)
-fbmX <- bigstatsr::as_FBM(data, type = "double", backingfile = paste0(temp_dir, "\\", file, "_fbm.bk"))
+fbmX <- bigstatsr::as_FBM(data, type = "double", backingfile = paste0(temp_dir, "\\", file, "_fbm"))
 
 
 # Rcpp Connection
