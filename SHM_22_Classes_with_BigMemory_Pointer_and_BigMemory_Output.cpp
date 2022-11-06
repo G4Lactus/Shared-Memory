@@ -107,7 +107,7 @@ public:
   }
   
   
-  void multiplay_scalar_with_bigMatrix(const double number) {
+  void multiply_scalar_with_bigMatrix(const double number) {
     
     MatrixAccessor<double> macc = convert_bigMptr_to_MatrixAccessor(p_bigM);
     
@@ -310,7 +310,7 @@ RCPP_MODULE(mod_External_bigMatrix_Admin) {
     .method("colSums_bigMatrix", &External_bigMatrix_Administration::colSums_bigMatrix, "Colum sums of big matrix.")
     .method("rowSums_bigMatrix", &External_bigMatrix_Administration::rowSums_bigMatrix, "Row sums of big matrix.")
     .method("colDifference_bigMatrix", &External_bigMatrix_Administration::colDifference_bigMatrix, "Colum difference of big matrix.")
-    .method("multiplay_scalar_with_bigMatrix", &External_bigMatrix_Administration::multiplay_scalar_with_bigMatrix, "Multiply each matrix entry with a number.")
+    .method("multiply_scalar_with_bigMatrix", &External_bigMatrix_Administration::multiply_scalar_with_bigMatrix, "Multiply each matrix entry with a number.")
     .method("add_number_to_bigMatrix", &External_bigMatrix_Administration::add_number_to_bigMatrix, "Add number to each element of big matrix.")
     .method("colMeans_of_bigMatrix", &External_bigMatrix_Administration::colMeans_of_bigMatrix, "Determine column means of big matrix.")
     .method("demean_bigMatrix", &External_bigMatrix_Administration::demean_bigMatrix, "Subtract column means from big matrix.")
