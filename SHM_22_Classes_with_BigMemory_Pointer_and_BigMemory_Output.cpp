@@ -59,6 +59,19 @@ public:
   }
   
   
+  void remove_number_from_column(int number) {
+    
+    MatrixAccessor<double> macc = convert_bigMptr_to_MatrixAccessor(p_bigM);
+    
+    for (std::size_t j{0}; j < std::size_t(macc.ncol()); ++j) {
+      for (std::size_t i{0}; i < std::size_t(macc.nrow()); ++i) {
+        macc[j][i] -= number;        
+      }
+    }
+    
+  }
+  
+
   Rcpp::NumericVector colSums_bigMatrix() {
     
     MatrixAccessor<double> macc = convert_bigMptr_to_MatrixAccessor(p_bigM);
@@ -321,6 +334,7 @@ RCPP_MODULE(mod_External_bigMatrix_Admin) {
     .method("multiply_bigMatrix_with_bigMatrix", &External_bigMatrix_Administration::multiply_bigMatrix_with_bigMatrix, "Multiply a class member big matrix with another big matrix.")
     .method("filter_bigMatrix_cols_for_same_column_number", &External_bigMatrix_Administration::filter_bigMatrix_cols_for_same_column_number, "Return column indices of big matrix whose values are mutual exclusive with all other columns.")
     .method("get_bigM_ptr", &External_bigMatrix_Administration::get_bigM_ptr, "Retrieve pointer to big matrix.")
+    .method("remove_number_from_column", &External_bigMatrix_Administration::remove_number_from_column, "Remove number from each column.")
   ;
   
 }
