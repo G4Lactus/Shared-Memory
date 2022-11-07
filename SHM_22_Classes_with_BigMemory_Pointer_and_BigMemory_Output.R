@@ -74,6 +74,9 @@ external_mat_admin <- new(External_bigMatrix_Administration, big_mat_lst$big_mat
 external_mat_admin$get_head_bigMatrix(10)
 head(big_mat_lst$big_mat1[,])
 
+external_mat_admin$remove_number_from_column(4)
+head(big_mat_lst$big_mat1[,])
+
 external_mat_admin$colSums_bigMatrix()
 colSums(big_mat_lst$big_mat1[,])
 identical(round(colSums(big_mat_lst$big_mat1[,]), 8), round(external_mat_admin$colSums_bigMatrix(), 8))
