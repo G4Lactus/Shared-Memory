@@ -9,6 +9,23 @@
  * 
  * @return vector of colSums.
  */
+
+// [[Rcpp::export]]
+Rcpp::NumericVector extract_0th_Col(SEXP& bigMat) {
+  Rcpp::XPtr<BigMatrix> xpMat(bigMat);
+  MatrixAccessor<double> macc(*xpMat);
+  
+  std::size_t i, n = macc.nrow();
+  
+  Rcpp::NumericVector res(n);
+  for (i = 0; i < n; ++i) {
+      res[i] = macc[0][i];
+  }
+  
+  return res;
+}
+
+
 // [[Rcpp::export]]
 Rcpp::NumericVector colSum_bm(SEXP& bigMat) {
   
