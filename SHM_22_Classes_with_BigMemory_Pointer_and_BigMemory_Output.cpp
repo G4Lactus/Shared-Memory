@@ -233,7 +233,7 @@ public:
   }
   
   
-  void subtract_bigMatrix_to_new_bigMatrix(SEXP ptr_another_bigMat) {
+  void subtract_new_bigMatrix_from_old_bigMatrix(SEXP ptr_another_bigMat) {
     
     MatrixAccessor<double> macc1 = convert_bigMptr_to_MatrixAccessor(p_bigM);
     MatrixAccessor<double> macc2 = convert_bigMptr_to_MatrixAccessor(ptr_another_bigMat);
@@ -330,7 +330,7 @@ RCPP_MODULE(mod_External_bigMatrix_Admin) {
     .method("colStandardDeviation_of_bigMatrix", &External_bigMatrix_Administration::colStandardDeviation_of_bigMatrix, "Determine column standard deviation of big matrix.")
     .method("colStandardize_bigMatrix", &External_bigMatrix_Administration::colStandardize_bigMatrix, "Standardize big matrix columnwise.")
     .method("add_bigMatrix_to_new_bigMatrix", &External_bigMatrix_Administration::add_bigMatrix_to_new_bigMatrix, "Add another big matrix to class owned.")
-    .method("subtract_bigMatrix_to_new_bigMatrix", &External_bigMatrix_Administration::subtract_bigMatrix_to_new_bigMatrix, "Subtract another big matrix from class owned.")
+    .method("subtract_new_bigMatrix_from_old_bigMatrix", &External_bigMatrix_Administration::subtract_new_bigMatrix_from_old_bigMatrix, "Subtract another big matrix from class owned.")
     .method("multiply_bigMatrix_with_bigMatrix", &External_bigMatrix_Administration::multiply_bigMatrix_with_bigMatrix, "Multiply a class member big matrix with another big matrix.")
     .method("filter_bigMatrix_cols_for_same_column_number", &External_bigMatrix_Administration::filter_bigMatrix_cols_for_same_column_number, "Return column indices of big matrix whose values are mutual exclusive with all other columns.")
     .method("get_bigM_ptr", &External_bigMatrix_Administration::get_bigM_ptr, "Retrieve pointer to big matrix.")
