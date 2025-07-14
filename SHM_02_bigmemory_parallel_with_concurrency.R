@@ -1,305 +1,191 @@
-# Demo: Parallel access to a matrix with independent and concurrent writing,
-#       data race and approaches to solve it!
+#' Demo: Parallel Data Access, Race Conditions, and Solutions
 # -----------------------------------------------------------------------------
+#' This tutorial demonstrates how to use `big.matrix` objects in a parallel
+#' context with teh `foreach` package.
+#' Also, the critical problem of "data races" is demonstrated and strategies
+#' for resolving them are discussed.
 library(foreach)
-library(iterators)
 library(parallel)
 library(doParallel)
 library(bigmemory)
-# -------------------
+library(flock)
 
-# work with a temporary folder to store the toy data, the advantage is that is
-# will destroy itself as soon as the R session is closed
-temp_dir <- tempdir()
-
-
-# Set up cluster
-# ---------------
+# Cluster Setup
 cl <- parallel::makeCluster(parallel::detectCores() - 2)
 doParallel::registerDoParallel(cl)
 foreach::getDoParWorkers()
 
+# Temporary Directory Setup
+temp_dir <- tempdir()
 
-# Scenario 1: Concurrent access and data race problem
+
+
+#' Scenario 1: Demonstrating the Data Race Problem
 # -----------------------------------------------------------------------------
-# define big matrix and store it
-# -------------------------------
-big_mtx <- as.big.matrix(
-              x = matrix(0, 10, 10),
-              type = "double",
-              backingfile = "big_mtx_description.bin",
-              backingpath = temp_dir,
-              descriptorfile = "big_mtx_description.desc",
-              shared = TRUE
-            )
-big_mtx_description <- describe(big_mtx)
-rm(big_mtx)
-gc()
+#' A data race occurs when multiple paralle workers attempt to read and write
+#' to the exact same memory location without any coordination. The final result
+#' is unpredictable, as it depends on the precise (and random) order in which
+#' the workers access the memory.
+#'
 
-# Parallel access
-# -----------------------------------------------------------------------------
-foreach(i = 1:10, .packages = "bigmemory", .combine = cbind) %dopar% {
+# Create file-backed big.matrix
+backing_dir1 <- file.path(temp_dir, "scenario_1")
+dir.create(backing_dir1)
 
-  m <- attach.big.matrix(paste0(temp_dir, "\\big_mtx_description.desc"))
-
-  # independent concurrent reading and writing on the same obj no problem
-  # -------------------------------------------------------------------------
-  m[1, i] <- m[1, i] + 5
-  m[3, i] <- m[3, i] + 42
-  m[8, i] <- m[8, i] + exp(1)
-
-  
-  # concurrent access and writing on the same obj triggers a data race problem!
-  # Which worker is first (?), which input to use (?) -> serious problem
-  # in all multi-threading applications -> the output is definitely wrong
-  # -------------------------------------------------------------------------
-  m[5, 5] <- m[5, 5] + 5
-  
-  return(0.)
-}
-# -----------------------------------------------------------------------------
-m_tst <- attach.big.matrix(paste0(temp_dir, "\\big_mtx_description.desc"))
-m_tst[,]  # the results at m_tst[5,5] illustrates the data race outcome!
-          # expected are 50, but you obtain some weird other value
-rm(list = setdiff(ls(), "cl"))
-gc()
-# -----------------------------------------------------------------------------
-# -----------------------------------------------------------------------------
-
-
-
-
-# Scenario 2: Simulation that illustrates the success rate with concurrent
-#             access. In my test trials I achieved success rates from 40-90%.
-#             Too volatile to rely on.
-#             Success depends on speed to access data. If we use no file backing
-#             such as .desc or .bin files, the success rate is higher. Otherwise
-#             it deteriorates.
-# -----------------------------------------------------------------------------
-# define big matrix and store it
-# -------------------------------
-ntrials <- 1e2
-scenario_outcome <- rep(0, 2)
-path_to_file <- tempdir()
-back_file <- "big_mtx"
-for (scenarioX in 1:2) {
-  outcome <- rep(0, times = ntrials)
-  for (trial in 1:ntrials) {
-    cat(paste0("Trial: ", trial, "/", ntrials, "\n"))
-    
-    if (scenarioX == 1) {
-      big_mtx <- as.big.matrix(
-        x = matrix(0, 10, 10),
-        type = "double",
-        shared = TRUE
-      )
-      big_mtx_description <- describe(big_mtx)      
-    } else {
-      if (!file.exists(paste0(path_to_file, "\\", back_file, ".bin"))) 
-      {
-        big_mtx <- big.matrix(nrow = 10, ncol = 10, init = 0, 
-                              backingfile = paste0(back_file, ".bin"),
-                              backingpath = path_to_file,
-                              descriptorfile = paste0(back_file, ".desc"))
-        big_mtx_description <- describe(big_mtx)
-        rm(big_mtx)        
-      }
-      else 
-      {
-        big_mtx <- attach.big.matrix(obj = paste0(path_to_file, "\\", back_file, ".desc"))
-        big_mtx[,] <- 0
-        big_mtx_description <- describe(big_mtx)
-        rm(big_mtx)
-      }
-    }
-
-  
-    # ---------------------------------------------------------------------------
-    foreach(i = 1:10, .packages = "bigmemory") %dopar% {
-      
-      m <- attach.big.matrix(big_mtx_description)
-      
-      # independent concurrent reading and writing on the same obj no problem
-      # -------------------------------------------------------------------------
-      m[1, i] <- m[1, i] + 5
-      m[3, i] <- m[3, i] + 42
-      m[8, i] <- m[8, i] + exp(1)
-      
-      # concurrent access and writing on the same obj triggers a data race!
-      # -------------------------------------------------------------------------
-      m[5, 5] <- m[5, 5] + 5
-      
-      return(0.)
-    }
-    # ---------------------------------------------------------------------------
-    m_tst <- attach.big.matrix(big_mtx_description)
-    if (m_tst[5,5] == 50) { outcome[trial] <- 1 } else { outcome[trial] <- 0}
-    rm(list = setdiff(ls(), c("cl", "outcome", "ntrials", "scenarioX", 
-                              "scenario_outcome",  "path_to_file", "back_file")))
-    gc()
-  }
-  scenario_outcome[scenarioX] <- mean(outcome)
-}
-# -----------------------------------------------------------------------------
-
-
-
-
-# Scenario 3: Concurrent access and manually solve the data race for 100%
-# -----------------------------------------------------------------------------
-# Here we use a file-backed matrix for illustration. It releases the RAM 
-# limitation, but has a little speed penalty -> SSD drive recommended
-big_mtx <- as.big.matrix(
+big_mtx_1 <- bigmemory::as.big.matrix(
   x = matrix(0, 10, 10),
   type = "double",
-  backingfile = "big_mtx_description_2.bk",
-  backingpath = tempdir(),
-  descriptorfile = "big_mtx_description_2.desc",
-  shared = TRUE
+  backingfile = "big_mtx_1.bin",
+  backingpath = backing_dir1,
+  descriptorfile = "big_mtx_1.desc"
 )
-# big_mtx_description <- describe(big_mtx)
+big_mtx_desc_1 <- bigmemory::describe(big_mtx_1)
+
 rm(big_mtx)
 gc()
-# -----------------------------------------------------------------------------
-out <- foreach(i = 1:10, .packages = "bigmemory", .combine = sum) %dopar% {
-  
-  
-  m <- attach.big.matrix(obj = paste0(path_to_file, "\\", "big_mtx_description_2.desc"))
-  
-  # independent concurrent reading and writing on the same obj no problem
-  # -------------------------------------------------------------------------
+
+
+#' Parallel Loop with Data Race
+foreach(i = 1:10, .packages = "bigmemory") %dopar% {
+  # Each worker attaches the same matrix
+  m <- bigmemory::attach.big.matrix(big_mtx_desc_1)
+
+  # These writing accesses are safe, as each worker writes to its own
+  # independent column 'i'.
   m[1, i] <- m[1, i] + 5
   m[3, i] <- m[3, i] + 42
   m[8, i] <- m[8, i] + exp(1)
-  
-  
-  # resolve race by writing third party variable and output
-  # -------------------------------------------------------------------------
-  out <- m[5, 5] + 5
-  
-  return(out)
-}
-# -----------------------------------------------------------------------------
-m_tst <- attach.big.matrix(paste0(path_to_file, "\\", "big_mtx_description_2.desc"))
-m_tst[,]
-m_tst[5,5] <- out  # manually outmaneuver the data race!
-m_tst[,]
 
-rm(list = setdiff(ls(), "cl"))
+  # Data Race: All workers try to update m[5, 5] at the same time.
+  # Each worker reads the current value, adds 5, and writes it back.
+  # If the value is 0, muliple workers might read 0, all calculate 5,
+  # and all write 5 back. The final result will in general not be 50.
+  m[5, 5] <- m[5, 5] + 5
+
+  return(NULL)
+}
+
+#' Result inspection
+m_tst_1 <- bigmemory::attach.big.matrix(big_mtx_desc_1)
+m_tst_1[, ]
+
+#' The value at m_tst_1[5,5] illustrates the data race outcome!
+#' The expected result is 10 * 5 = 50, but the actual result is much smaller.
+cat("Value at [5, 5]: ", m_tst_1[5, 5], "(Expected: 50)\n")
+
+rm(list = setdiff(ls(), c("cl", "temp_dir")))
+gc()
+
+# -----------------------------------------------------------------------------
+
+
+
+#' Scenario 2: Algorithmic Solution - The "Reduce" Strategy
+#' -----------------------------------------------------------------------------
+#' The most robust way to handle this data race inside a `foreach` context is to
+#' avoid having workers write to a shared location.
+#' The `.combine` argument of `foreach` then "reduces" (e.g., sums) these
+#' results in a safe, serial manner.
+#'
+backing_dir2 <- file.path(temp_dir, "scenario_2")
+dir.create(backing_dir2)
+
+big_mtx_2 <- bigmemory::big.matrix(
+  nrow = 10, ncol = 10, type = "double", init = 0,
+  backingfile = "big_mtx_2.bin",
+  backingpath = backing_dir2,
+  descriptorfile = "big_mtx_2.desc"
+)
+big_mtx_2_desc <- bigmemory::describe(big_mtx_2)
+
+# The "Reduce" strategy is achieved by using `.combine = 'sum'`
+total_update_value <- foreach(
+  i = 1:10,
+  .packages = "bigmemory",
+  .combine = "sum"
+) %dopar% {
+
+  m <- bigmemory::attach.big.matrix(big_mtx_2_desc)
+
+  # Safe, independent writes
+  m[1, i] <- m[1, i] + 5
+  m[3, i] <- m[3, i] + 42
+  m[8, i] <- m[8, i] + exp(1)
+
+  # SOLUTION: Instead of writing to m[5, 5], an intermediate value
+  # is computed and as per worker result returned.
+  update_val <- 5
+
+  return(update_val)
+}
+
+# The final update is then performed afterwards
+m_tst_2 <- bigmemory::attach.big.matrix(big_mtx_2_desc)
+m_tst_2[5, 5] <- m_tst_2[5, 5] + total_update_value
+print(m_tst_2[, ])
+cat("Value at [5, 5]: ", m_tst_2[5, 5], "(Expected: 50)\n")
+
+rm(list = setdiff(ls(), c("cl", "temp_dir")))
 gc()
 # -----------------------------------------------------------------------------
 
 
 
-
-# Scenario 4: Mutex, lock and unlock
+#' Scenario 3: Mutex, lock and unlock
 # -----------------------------------------------------------------------------
-# Another solution to the race problem is to enforce atomic execution,
-# i.e., only one thread changes data at a time, also called synchronization.
-# The guarding mechanism is called mutex (mutual exclusive access).
-# It ensures that a thread locks the mutex or wait until it is lockable again.
-# 
-# The synchronicity package provides support for synchronization via mutexes and
-# may eventually support interprocess communication (ipc) and message passing.
-# 
-# NOTE: UNFORTUNATELY NOT WORKING YET!!!
-# ---------------------------------------
-path_to_data <- tempdir()
-big_mtx <- as.big.matrix(
+#' Another solution to the race problem is to enforce atomic execution,
+#' i.e., only one thread changes data at a time, also called synchronization.
+#' The guarding mechanism is called mutex (mutual exclusive lock).
+#' The `flock` package provides a file-based locking.
+backing_dir3 <- file.path(temp_dir, "scenario_3")
+dir.create(backing_dir3)
+
+big_mtx_3 <- bigmemory::as.big.matrix(
   x = matrix(0, 10, 10),
   type = "double",
   shared = TRUE,
-  backingfile = "big_mtx_description_3.bk",
-  backingpath = path_to_data,
-  descriptorfile = "big_mtx_description_3.desc",
+  backingfile = "big_mtx_3.bin",
+  backingpath = backing_dir3,
+  descriptorfile = "big_mtx_3.desc",
 )
+big_mtx_3_desc <- bigmemory::describe(big_mtx_3)
+
+# Create a separate, empty file to serve as lock
+lock_file_path <- file.path(backing_dir3, "my.lock")
+file.create(lock_file_path)
 
 
-# ---------------------------------------------------------------------------
+# Parallel Loop with Mutex
 foreach(i = 1:10, .packages = c("bigmemory", "flock")) %dopar% {
-  
-  m <- attach.big.matrix(paste0(path_to_data, "\\", "big_mtx_description_3.desc"))
-  
-  # independent concurrent reading and writing on the same obj no problem
-  # -------------------------------------------------------------------------
+
+  m <- bigmemory::attach.big.matrix(big_mtx_3_desc)
+
+  # independent concurrent reading and writing on the same obj
+  # ----------------------------------------------------------
   m[1, i] <- m[1, i] + 5
   m[3, i] <- m[3, i] + 42
   m[8, i] <- m[8, i] + exp(1)
-  
-  # concurrent access and writing on the same obj triggers a data race!
-  # -------------------------------------------------------------------------
-  locked <- flock::lock(paste0(path_to_data, "\\", "big_mtx_description_3.desc"))
+
+  # Critical Section:.combine
+  # A worker must acquire the lock before entering this block.
+  # If the lock is held by another worker, it will wait.
+  my_lock <- flock::lock(lock_file_path)
+  # This section is now atomic: only one worker can execute it
+  # at a time
   m[5, 5] <- m[5, 5] + 5
-  flock::unlock(locked)
-  return(0.)
+
+  flock::unlock(my_lock)
+
+  return(NULL)
 }
-# ---------------------------------------------------------------------------
-m_tst <- attach.big.matrix(paste0(path_to_data, "\\", "big_mtx_description_3.desc"))
-m_tst[,]
-rm(list = setdiff(ls(), "cl"))
 
+#' Result inspection
+m_tst_3 <- attach.big.matrix(big_mtx_3_desc)
+print(m_tst_3[, ])
+cat("Value at [5, 5]:", m_tst_3[5, 5], "(Expected: 50)\n")
+# The result is now correct. However, this method introduces overhead,
+# as workers may have to wait for the lock. The algorithmic solution in
+# Scenario 2 is often more efficient for `foreach` loops.
 
-
-# Simulation with mutex: its possible that read access errors occur in this
-# simulation, as the mutex does not seems to work correctly inside the 
-# foreach environment.
-# We use the [flock] package here to establish a mutex, [synchronicity] is 
-# another example.
-# ---------------------------
-path_to_data <- tempdir()
-back_file <- "big_mtx4"
-ntrials <- 1e3
-outcome <- rep(0, times = ntrials)
-for (trial in 1:ntrials) {
-  cat(paste0("Trial: ", trial, "/", ntrials, "\n"))
-  
-  if (!file.exists(paste0(path_to_data, "\\", back_file, ".bk"))) 
-  {
-    big_mtx <- big.matrix(nrow = 10, ncol = 10, init = 0, 
-                          backingfile = paste0(back_file, ".bk"),
-                          backingpath = path_to_data,
-                          descriptorfile = paste0(back_file, ".desc")
-                         )
-    big_mtx_description <- describe(big_mtx)
-    rm(big_mtx)        
-  }
-  else 
-  {
-    big_mtx <- attach.big.matrix(obj = paste0(path_to_data, "\\", paste0(back_file, ".desc")))
-    big_mtx[,] <- 0
-    big_mtx_description <- describe(big_mtx)
-    rm(big_mtx)
-  }
-
-
-  # ---------------------------------------------------------------------------
-  foreach(i = 1:10, .packages = c("bigmemory", "flock")) %dopar% {
-
-
-    m <- attach.big.matrix(paste0(path_to_data, "\\", paste0(back_file, ".desc")))
-
-    # independent concurrent reading and writing on the same obj no problem
-    # -------------------------------------------------------------------------
-    m[1, i] <- m[1, i] + 5
-    m[3, i] <- m[3, i] + 42
-    m[8, i] <- m[8, i] + exp(1)
-    
-    
-    # concurrent access and writing
-    # -------------------------------------------------------------------------
-    locked <- flock::lock(paste0(path_to_data, "\\", paste0(back_file, ".desc")))
-    m[5, 5] <- m[5, 5] + 5
-    flock::unlock(locked)
-    
-    return(0.)
-  }
-  # ---------------------------------------------------------------------------
-  m_tst <- attach.big.matrix(big_mtx_description)
-  if (m_tst[5,5] == 50) { outcome[trial] <- 1 } else { outcome[trial] <- 0}
-  
-  rm(list = setdiff(ls(), c("cl", "outcome", "ntrials", "path_to_data",
-                            "back_file")))
-  gc()
-}
-mean(outcome)
-# -----------------------------------------------------------------------------
+# Stop Cluster
+parallel::stopCluster(cl)
