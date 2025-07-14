@@ -532,9 +532,6 @@ identical(big_iris_a[, ], big_iris_read_a[, ])  # TRUE
 #' Demo 6: Working with Massive Data
 # -----------------------------------------------------------------------------
 #' In the following we are creating a object out of RAM.
-#' ** WARNING: DO NOT RUN UNLESS YOU INTEND TO CREATE A VERY LARGE FILE 
-#' (~218 GB) on your HARD DRIVE.
-#'
 library(bigmemory)
 
 #' Create a dedicated temporary directory
@@ -570,4 +567,3 @@ cat(
 #'  and .desc files) when you close your R session properly (e.g., using `q()`).
 #'
 q()
-
