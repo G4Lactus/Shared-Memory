@@ -48,6 +48,8 @@
 #' https://cran.microsoft.com/snapshot/2020-04-20/web/packages/ffbase/index.html
 #' https://cran.microsoft.com/snapshot/2020-04-20/web/packages/ffbase/ffbase.pdf
 #'
+#' and the project's GitHub: https://github.com/edwindj/ffbase
+#'
 #' ffbase: functions for ff() and ffdf() objs in the areas of
 #'   - mathematics: abs(), sign(), sqrt(), ceiling(), floor(), log(), exp(),
 #'                  cos(), cosh(), sin(), sinh(), gamma()

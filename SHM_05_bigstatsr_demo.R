@@ -3,12 +3,12 @@
 # bigstatsR is an adaption of bigmemory and like it, it also provides a file
 # backing based data type. However, compared to bigmemory, we can work with the
 # objects directly, rather than their pointers.
-# 
+#
 # bigstatsr is more modern compared to bigmemory, and backing files are easier
 # to delete. First delete the R obj and perform a gc(), then you can delete the
 # backingfile.
 # Also bigstats offers a C++ backend for own code.
-# 
+#
 # The author's github:
 # https://privefl.github.io/R-presentation/bigstatsr.html#19
 # -----
