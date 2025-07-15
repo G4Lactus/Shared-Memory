@@ -46,7 +46,7 @@ gc()
 
 
 #' Parallel Loop with Data Race
-foreach(i = 1:10, .packages = "bigmemory") %dopar% {
+foreach(i = 1:10, .packages = "bigmemory", .combine = cbind) %dopar% {
   # Each worker attaches the same matrix
   m <- bigmemory::attach.big.matrix(big_mtx_desc_1)
 
@@ -155,8 +155,8 @@ lock_file_path <- file.path(backing_dir3, "my.lock")
 file.create(lock_file_path)
 
 
-# Parallel Loop with Mutex
-foreach(i = 1:10, .packages = c("bigmemory", "flock")) %dopar% {
+#' Parallel Loop with Mutex
+foreach(i = 1:10, .packages = c("bigmemory", "flock"), .combine = cbind) %dopar% {
 
   m <- bigmemory::attach.big.matrix(big_mtx_3_desc)
 
@@ -180,12 +180,14 @@ foreach(i = 1:10, .packages = c("bigmemory", "flock")) %dopar% {
 }
 
 #' Result inspection
-m_tst_3 <- attach.big.matrix(big_mtx_3_desc)
+m_tst_3 <- bigmemory::attach.big.matrix(big_mtx_3_desc)
 print(m_tst_3[, ])
 cat("Value at [5, 5]:", m_tst_3[5, 5], "(Expected: 50)\n")
-# The result is now correct. However, this method introduces overhead,
-# as workers may have to wait for the lock. The algorithmic solution in
-# Scenario 2 is often more efficient for `foreach` loops.
+#' The result is now correct. However, this method introduces overhead,
+#' as workers may have to wait for the lock. The algorithmic solution in
+#' Scenario 2 is often more efficient for `foreach` loops.
 
-# Stop Cluster
+#' Stop Cluster
 parallel::stopCluster(cl)
+rm(list = ls())
+gc()
