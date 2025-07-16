@@ -36,7 +36,7 @@ print(A)
 # -----------------------------------------------------------------------------
 #' The best practice is to create an XPtr that points to a self-contained C++
 #' object that OWNS its own memory, using `aux_mem = TRUE`.
-cat("\n--- Demo 1: Creating a safe, self-contained XPtr ---\n")
+cat("\nDemo 1: Creating a safe, self-contained XPtr ---\n")
 
 # We use the recommended C++ function signature (`arma::mat&`).
 # `aux_mem = TRUE` tells Armadillo to allocate new memory and COPY the data.
@@ -54,7 +54,7 @@ cat("Data retrieved from safe_xptr is identical to original A:",
 # ------------------------------------------------------------------------------
 #' If we use `aux_mem = FALSE`, the C++ object does NOT own the data. Instead,
 #' it just holds a raw pointer to the memory of the original R object `A`.
-cat("\n--- Demo 2: Creating a dangerous, non-owning XPtr ---\n")
+cat("\nDemo 2: Creating a dangerous, non-owning XPtr ---\n")
 dangerous_xptr <- export_mat_to_XPtr_reference(A, aux_mem = FALSE)
 
 #' **WARNING:** `dangerous_xptr` is a time bomb. It works only as long as the
@@ -75,7 +75,7 @@ if (FALSE) {
 # -----------------------------------------------------------------------------
 #' The real gain of XPtrs is passing them back to C++ to work with persistent
 #'  data.
-cat("\n--- Demo 3: Passing the safe XPtr back to C++ for modification ---\n")
+cat("\nDemo 3: Passing the safe XPtr back to C++ for modification ---\n")
 cat("Data in safe_xptr before modification:\n")
 print(retrieve_mat_from_XPtr(safe_xptr))
 
