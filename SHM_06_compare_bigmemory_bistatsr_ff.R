@@ -11,10 +11,10 @@ library(bigstatsr)
 library(ff)
 library(parallel)
 
-#' 1. Setup: Create the Data and On-Disk Objects ---
+#' Setup: Create the Data and On-Disk Objects
 #' We'll use a 500,000 x 2 matrix as our source data.
-N <- 5e5
-mat <- matrix(rnorm(N * 2), N, 2)
+n_elems <- 5e5
+mat <- matrix(rnorm(n_elems * 2), n_elems, 2)
 
 #' Create a temporary directory to store all backing files.
 backing_dir <- file.path(tempdir(), "benchmark_demo")
@@ -44,14 +44,15 @@ ff_mtx <- ff(
 )
 
 
-#' 2. Run the Benchmarks
+
+#' Run the Benchmarks
 #' Set up a cross-platform parallel cluster.
 cl <- makeCluster(detectCores() - 2, type = "PSOCK")
 
-#' Benchmark 1: `bigmemory`
+#' Benchmark `bigmemory`:
 #' The worker function attaches to the matrix via its descriptor.
 time_bigmemory <- system.time({
-  res_bigmemory <- unlist(parLapply(cl, clusterSplit(cl, 1:N),
+  res_bigmemory <- unlist(parLapply(cl, clusterSplit(cl, 1:n_elems),
     fun = function(part, desc) {
       require(bigmemory)
       m <- attach.big.matrix(desc)
@@ -62,10 +63,10 @@ time_bigmemory <- system.time({
 })
 
 
-#' Benchmark 2: `bigstatsr`
+#' Benchmark `bigstatsr`:
 #' The worker function attaches to the FBM via its .rds file path.
 time_bigstatsr <- system.time({
-  res_bigstatsr <- unlist(parLapply(cl, clusterSplit(cl, 1:N),
+  res_bigstatsr <- unlist(parLapply(cl, clusterSplit(cl, 1:n_elems),
     fun = function(part, rds) {
       require(bigstatsr)
       m <- big_attach(rds)
@@ -76,7 +77,7 @@ time_bigstatsr <- system.time({
 })
 
 
-#' Benchmark 3: `ff`
+#' Benchmark `ff`:
 #' Export the name of the ff object and have each worker `open()` it.
 clusterExport(cl, "ff_mtx")
 clusterEvalQ(cl, {
@@ -85,7 +86,7 @@ clusterEvalQ(cl, {
 })
 
 time_ff <- system.time({
-  res_ff <- unlist(parLapply(cl, chunk(1:N),
+  res_ff <- unlist(parLapply(cl, chunk(1:n_elems),
     fun = function(part) {
       return(abs(ff_mtx[part, 1] - ff_mtx[part, 2]))
     }
@@ -98,7 +99,8 @@ stopCluster(cl)
 gc()
 
 
-#' 3. Display Results
+
+#' Display Results
 #' Combine the timing results into a clean, readable data frame.
 timing_results <- data.frame(
   Package = c("bigmemory", "bigstatsr", "ff"),
