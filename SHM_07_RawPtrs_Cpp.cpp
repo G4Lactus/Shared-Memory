@@ -63,8 +63,3 @@ arma::mat simulate_pointer_behavior(arma::mat& A,int type) {
     };
   }
 }
-
-// NOTE: 
-// Returning a raw pointer to R fails, as it is no SEXP (S expression).
-// The code does not compile! Either you dereference the pointer or you make
-// an XPtr and return it to R.

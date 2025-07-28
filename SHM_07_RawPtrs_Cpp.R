@@ -2,6 +2,10 @@
 #' Two main principles under investigation:
 #'  1. How modifications in C++ are returned to R.
 #'  2. The dangers of manual memory allocation ('new') in C++.
+#'
+#' Main insight: Returning a raw pointer to R fails, as it is no SEXP 
+#'  (S expression), and such code does not compile!
+#' Either you dereference the pointer or you make an XPtr and return it to R.
 # ------------------------------------------------------------------------------
 #'
 library(Rcpp)
